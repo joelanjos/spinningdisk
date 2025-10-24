@@ -2,7 +2,7 @@
   "name": "Spinning Fidget Drawer",
   "short_name": "SpinDrawer",
   "description": "A satisfying fidget app for drawing on a spinning disk.",
-  "start_url": "/fidget_spinner_app.html",
+  "start_url": "/spinningdisk/index.html",
   "display": "standalone",
   "background_color": "#4b5563",
   "theme_color": "#374151",
