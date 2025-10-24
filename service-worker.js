@@ -1,8 +1,8 @@
 const CACHE_NAME = 'spin-drawer-cache-v1';
 const urlsToCache = [
   '/',
-  '/fidget_spinner_app.html',
-  '/manifest.json',
+  '/spinningdisk/index.html',
+  '/spinningdisk/manifest.json',
   'https://cdn.tailwindcss.com'
 ];
 
