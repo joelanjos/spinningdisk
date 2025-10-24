@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spinning Fidget Drawer</title>
+    <!-- PWA Manifest Link --><link rel="manifest" href="manifest.json">
+    <!-- Theme Color --><meta name="theme-color" content="#374151">
+    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        canvas {
+            touch-action: none;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: #d3d3d3;
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #3b82f6;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        /* Custom styles for active tool button */
+        .tool-button.active {
+            @apply ring-2 ring-blue-500 ring-offset-2;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 flex flex-col h-screen w-screen text-gray-800">
+
+    <!-- Main Canvas Area --><div class="flex-grow flex items-center justify-center p-4">
+        <canvas id="drawingCanvas" class="shadow-2xl rounded-2xl"></canvas>
+    </div>
+
+    <!-- Control Panel --><div class="bg-gray-100 p-4 shadow-inner grid grid-cols-2 md:grid-cols-6 gap-4 rounded-t-2xl">
+        
+        <!-- Tool Selection --><div class="col-span-2 md:col-span-6 flex justify-center gap-2">
+            <button id="toolPen" class="tool-button p-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition duration-200 active" aria-label="Pen">
+                <!-- Heroicon: outline/pencil -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
+                </svg>
+            </button>
+            <button id="toolBrush" class="tool-button p-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition duration-200" aria-label="Brush">
+                <!-- Heroicon: outline/paint-brush -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.53 16.122a3 3 0 0 0-5.78 1.128 2.25 2.25 0 0 1-2.4 2.245 4.5 4.5 0 0 0 8.4-2.245c0-.399-.078-.78-.22-1.128Zm0 0a15.998 15.998 0 0 0 3.388-1.62m-5.043-.025a15.994 15.994 0 0 1 1.622-3.385m5.043.025a15.994 15.994 0 0 0 1.622-3.385m3.388 1.62a15.998 15.998 0 0 0 3.388-1.62m-7.029 3.37a15.998 15.998 0 0 0-3.388-1.62m7.029 3.37.026.026a15.998 15.998 0 0 0 3.388 1.622m-7.029-3.37a15.998 15.998 0 0 1 3.388 1.622m0 0a15.998 15.998 0 0 1 3.388 1.622m0 0a15.998 15.998 0 0 1-3.388 1.622m-7.029-3.37a15.998 15.998 0 0 1-3.388 1.622m7.029 3.37a15.998 15.998 0 0 0-3.388 1.622m0 0a15.998 15.998 0 0 0-3.388-1.622m7.029 3.37a15.998 15.998 0 0 1-3.388-1.622m0 0a15.998 15.998 0 0 1-3.388-1.622m0 0A15.998 15.998 0 0 1 9.53 16.122Z" />
+                </svg>
+            </button>
+            <button id="toolSpray" class="tool-button p-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition duration-200" aria-label="Spray">
+                <!-- Custom Spray Can Icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 10.5V8.25m5.25 2.25V8.25" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15H15.75a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5H8.25a1.5 1.5 0 0 1-1.5-1.5v-3a1.5 1.5 0 0 1 1.5-1.5Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 15v-1.5A2.25 2.25 0 0 1 11.25 11.25h1.5A2.25 2.25 0 0 1 15 13.5V15" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.25V6.75a1.5 1.5 0 0 1 1.5-1.5h.75a1.5 1.5 0 0 0 1.5-1.5V3a1.5 1.5 0 0 0-1.5-1.5h-3A1.5 1.5 0 0 0 9 3v.75a1.5 1.5 0 0 0 1.5 1.5h.75a1.5 1.5 0 0 1 1.5 1.5v1.5Z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m15 10.5-1.5 1.5-1.5-1.5" />
+                </svg>
+            </button>
+            <button id="toolPencil" class="tool-button p-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition duration-200" aria-label="Pencil">
+                <!-- Heroicon: outline/pencil-square -->
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Speed Control --><div class="col-span-2">
+            <label for="speedControl" class="block text-sm font-medium text-gray-700">Speed</label>
+            <input type="range" id="speedControl" min="1" max="100" value="30" class="mt-1">
+        </div>
+
+        <!-- Thickness Control --><div class="col-span-2">
+            <label for="thicknessControl" class="block text-sm font-medium text-gray-700">Thickness</label>
+            <input type="range" id="thicknessControl" min="1" max="50" value="5" class="mt-1">
+        </div>
+
+        <!-- Color Picker --><div class="flex flex-col items-center justify-center">
+            <label for="colorPicker" class="block text-sm font-medium text-gray-700">Color</label>
+            <input type="color" id="colorPicker" value="#000000" class="mt-1 w-16 h-10 p-1 border-0 rounded-md cursor-pointer">
+        </div>
+
+        <!-- Clear Button --><div class="col-span-1 md:col-span-2">
+            <button id="clearButton" class="w-full h-full bg-red-500 text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-red-600 transition duration-200">
+                Clear
+            </button>
+        </div>
+
+        <!-- Save Button --><div class="col-span-1 md:col-span-2">
+            <button id="saveButton" class="w-full h-full bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg shadow hover:bg-blue-600 transition duration-200">
+                Save
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('drawingCanvas');
+            const ctx = canvas.getContext('2d');
+            const drawingLayer = document.createElement('canvas');
+            const drawCtx = drawingLayer.getContext('2d');
+
+            // Controls
+            const speedControl = document.getElementById('speedControl');
+            const thicknessControl = document.getElementById('thicknessControl');
+            const colorPicker = document.getElementById('colorPicker');
+            const clearButton = document.getElementById('clearButton');
+            const saveButton = document.getElementById('saveButton');
+            
+            // Tool Buttons
+            const toolPenButton = document.getElementById('toolPen');
+            const toolBrushButton = document.getElementById('toolBrush');
+            const toolSprayButton = document.getElementById('toolSpray');
+            const toolPencilButton = document.getElementById('toolPencil');
+
+            // Drawing state
+            let isDrawing = false;
+            let rotationAngle = 0;
+            let rotationSpeed = 0.03; // Default speed
+            let penWidth = 5;
+            let penColor = '#000000';
+            let currentTool = 'pen'; // Default tool
+            let isLoopRunning = false; // Flag to ensure loop starts only once
+
+            let cx, cy; // Canvas center
+            let diskRadius;
+            let fingerX, fingerY; // User's current finger/mouse position
+            let lastPoint; // Last *un-rotated* point in canvas space
+
+            // --- Canvas Setup ---
+
+            function resizeCanvas() {
+                const container = canvas.parentElement;
+                const rect = container.getBoundingClientRect();
+                const size = Math.min(rect.width, rect.height) * 0.95;
+
+                // NEW: Add a guard to prevent setting size 0
+                if (size <= 0) {
+                    // If size is 0, the layout isn't ready. Try again.
+                    return; 
+                }
+
+                canvas.width = size;
+                canvas.height = size;
+                drawingLayer.width = size;
+                drawingLayer.height = size;
+
+                cx = canvas.width / 2;
+                cy = canvas.height / 2;
+                diskRadius = canvas.width / 2 * 0.98;
+
+                drawDiskOnLayer();
+
+                // Start the animation loop *after* the first successful resize
+                if (!isLoopRunning) {
+                    mainAnimationLoop();
+                    isLoopRunning = true;
+                }
+            }
+
+            function drawDiskOnLayer() {
+                drawCtx.clearRect(0, 0, drawingLayer.width, drawingLayer.height);
+                drawCtx.beginPath();
+                drawCtx.arc(cx, cy, diskRadius, 0, Math.PI * 2);
+                drawCtx.fillStyle = 'white';
+                drawCtx.fill();
+                
+                drawCtx.beginPath();
+                drawCtx.arc(cx, cy, diskRadius, 0, Math.PI * 2);
+                drawCtx.strokeStyle = '#e5e7eb'; // gray-200
+                drawCtx.lineWidth = 2;
+                drawCtx.stroke();
+            }
+            
+            function drawTurntable() {
+                ctx.beginPath();
+                ctx.arc(cx, cy, diskRadius * 1.02, 0, Math.PI * 2);
+                ctx.fillStyle = '#374151'; // gray-700
+                ctx.fill();
+
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(rotationAngle);
+                
+                const numMarks = 36;
+                for (let i = 0; i < numMarks; i++) {
+                    ctx.beginPath();
+                    const angle = (Math.PI * 2 / numMarks) * i;
+                    ctx.strokeStyle = (i % 2 === 0) ? '#9ca3af' : '#4b5563';
+                    ctx.lineWidth = 4; // Thicker border
+                    ctx.moveTo(
+                        Math.cos(angle) * (diskRadius * 0.99),
+                        Math.sin(angle) * (diskRadius * 0.99)
+                    );
+                    ctx.lineTo(
+                        Math.cos(angle) * (diskRadius * 1.02),
+                        Math.sin(angle) * (diskRadius * 1.02)
+                    );
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+
+            // --- Control Event Listeners ---
+
+            speedControl.addEventListener('input', (e) => {
+                rotationSpeed = (e.target.value / 100) * 0.145 + 0.005;
+            });
+
+            thicknessControl.addEventListener('input', (e) => {
+                penWidth = e.target.value;
+            });
+
+            colorPicker.addEventListener('input', (e) => {
+                penColor = e.target.value;
+            });
+
+            clearButton.addEventListener('click', () => {
+                isDrawing = false;
+                drawDiskOnLayer();
+            });
+
+            saveButton.addEventListener('click', () => {
+                const tempSaveCanvas = document.createElement('canvas');
+                tempSaveCanvas.width = canvas.width;
+                tempSaveCanvas.height = canvas.height;
+                const tempCtx = tempSaveCanvas.getContext('2d');
+                
+                tempCtx.fillStyle = 'white';
+                tempCtx.fillRect(0, 0, tempSaveCanvas.width, tempSaveCanvas.height);
+
+                tempCtx.save();
+                tempCtx.translate(cx, cy);
+                tempCtx.rotate(rotationAngle);
+                tempCtx.translate(-cx, -cy);
+                tempCtx.drawImage(drawingLayer, 0, 0);
+                tempCtx.restore();
+
+                const dataUrl = tempSaveCanvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = 'fidget-design.png';
+                link.click();
+            });
+
+            window.addEventListener('resize', resizeCanvas);
+
+            // --- Tool Selection ---
+            function selectTool(toolName) {
+                currentTool = toolName;
+                document.querySelectorAll('.tool-button').forEach(button => {
+                    button.classList.remove('active');
+                });
+                document.getElementById('tool' + toolName.charAt(0).toUpperCase() + toolName.slice(1)).classList.add('active');
+            }
+
+            toolPenButton.addEventListener('click', () => selectTool('pen'));
+            toolBrushButton.addEventListener('click', () => selectTool('brush'));
+            toolSprayButton.addEventListener('click', () => selectTool('spray'));
+            toolPencilButton.addEventListener('click', () => selectTool('pencil'));
+
+            // --- Drawing Logic ---
+
+            function updateFingerPosition(e) {
+                e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.clientX || (e.touches[0] ? e.touches[0].clientX : fingerX);
+                const clientY = e.clientY || (e.touches[0] ? e.touches[0].clientY : fingerY);
+                fingerX = clientX - rect.left;
+                fingerY = clientY - rect.top;
+                
+                // Get pressure for touch events
+                if (e.touches && e.touches[0] && e.touches[0].force !== undefined) {
+                    return e.touches[0].force;
+                }
+                return 0.5; // Default pressure for mouse or non-pressure touch
+            }
+            
+            function getUnrotatedPoint(x, y) {
+                const relX = x - cx;
+                const relY = y - cy;
+                const paperX = relX * Math.cos(-rotationAngle) - relY * Math.sin(-rotationAngle) + cx;
+                const paperY = relX * Math.sin(-rotationAngle) + relY * Math.cos(-rotationAngle) + cy;
+                return { x: paperX, y: paperY };
+            }
+
+            function startDrawing(e) {
+                isDrawing = true;
+                const pressure = updateFingerPosition(e);
+                lastPoint = getUnrotatedPoint(fingerX, fingerY);
+                // For spray, we want an initial burst
+                if (currentTool === 'spray') {
+                    drawSpray(lastPoint.x, lastPoint.y, penWidth, pressure);
+                }
+            }
+
+            function stopDrawing() {
+                isDrawing = false;
+            }
+
+            function draw(e) {
+                if (!isDrawing) return;
+                const pressure = updateFingerPosition(e);
+                const newPoint = getUnrotatedPoint(fingerX, fingerY);
+                
+                // Check if the point is inside the disk
+                const dist = Math.sqrt(Math.pow(newPoint.x - cx, 2) + Math.pow(newPoint.y - cy, 2));
+                if (dist > diskRadius * 1.01) { // Allow slight overflow
+                    lastPoint = newPoint; // Update last point even if outside, but don't draw
+                    return; 
+                }
+
+                switch (currentTool) {
+                    case 'pen':
+                        drawPen(lastPoint, newPoint);
+                        break;
+                    case 'brush':
+                        drawBrush(lastPoint, newPoint, penWidth, pressure);
+                        break;
+                    case 'spray':
+                        drawSpray(newPoint.x, newPoint.y, penWidth, pressure);
+                        break;
+                    case 'pencil':
+                        drawPencil(lastPoint, newPoint, penWidth, pressure);
+                        break;
+                }
+                lastPoint = newPoint;
+            }
+
+            // --- Tool-Specific Drawing Functions ---
+
+            function drawPen(p1, p2) {
+                drawCtx.beginPath();
+                drawCtx.moveTo(p1.x, p1.y);
+                drawCtx.lineTo(p2.x, p2.y);
+                drawCtx.strokeStyle = penColor;
+                drawCtx.lineWidth = penWidth;
+                drawCtx.lineCap = 'round';
+                drawCtx.lineJoin = 'round';
+                drawCtx.globalAlpha = 1.0;
+                drawCtx.stroke();
+            }
+
+            function drawBrush(p1, p2, baseThickness, pressure) {
+                const effectiveThickness = baseThickness * (0.5 + pressure * 1.5); // Adjust for pressure
+                drawCtx.beginPath();
+                drawCtx.moveTo(p1.x, p1.y);
+                drawCtx.lineTo(p2.x, p2.y);
+                drawCtx.strokeStyle = penColor;
+                drawCtx.lineWidth = effectiveThickness;
+                drawCtx.lineCap = 'round';
+                drawCtx.lineJoin = 'round';
+                drawCtx.globalAlpha = 0.8; // Slightly transparent for a brush effect
+                drawCtx.filter = 'blur(1px)'; // Soft edges
+                drawCtx.stroke();
+                drawCtx.filter = 'none'; // Reset filter
+            }
+
+            function drawSpray(x, y, baseSize, pressure) {
+                const effectiveSize = baseSize * (0.5 + pressure * 1.5);
+                const sprayDensity = 10; // Number of dots
+                const sprayRadius = effectiveSize * 2; // Area of spray
+                drawCtx.fillStyle = penColor;
+                drawCtx.globalAlpha = 0.5; // Faint dots
+
+                for (let i = 0; i < sprayDensity; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const radius = Math.random() * sprayRadius;
+                    const dotX = x + Math.cos(angle) * radius;
+                    const dotY = y + Math.sin(angle) * radius;
+                    
+                    // Keep spray dots within the disk (roughly)
+                    const distFromCenter = Math.sqrt(Math.pow(dotX - cx, 2) + Math.pow(dotY - cy, 2));
+                    if (distFromCenter <= diskRadius) {
+                        drawCtx.beginPath();
+                        drawCtx.arc(dotX, dotY, Math.random() * (baseSize / 5) + 1, 0, Math.PI * 2);
+                        drawCtx.fill();
+                    }
+                }
+                drawCtx.globalAlpha = 1.0; // Reset alpha
+            }
+
+            function drawPencil(p1, p2, baseThickness, pressure) {
+                const effectiveThickness = baseThickness * (0.2 + pressure * 1.2);
+                drawCtx.beginPath();
+                drawCtx.moveTo(p1.x, p1.y);
+                drawCtx.lineTo(p2.x, p2.y);
+                drawCtx.strokeStyle = penColor;
+                drawCtx.lineWidth = effectiveThickness;
+                drawCtx.lineCap = 'butt'; // Sharper ends
+                drawCtx.lineJoin = 'miter'; // Sharper corners
+                drawCtx.globalAlpha = 0.7; // Lighter for pencil
+                // Simulate texture by drawing multiple faint lines
+                for (let i = 0; i < 3; i++) {
+                    const offset = (Math.random() - 0.5) * effectiveThickness * 0.5;
+                    drawCtx.moveTo(p1.x + offset, p1.y + offset);
+                    drawCtx.lineTo(p2.x + offset, p2.y + offset);
+                    drawCtx.stroke();
+                }
+                drawCtx.globalAlpha = 1.0; // Reset alpha
+            }
+
+
+            // --- Animation Loop ---
+            function mainAnimationLoop() {
+                requestAnimationFrame(mainAnimationLoop);
+                rotationAngle += rotationSpeed;
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawTurntable();
+                
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(rotationAngle);
+                ctx.translate(-cx, -cy);
+                ctx.drawImage(drawingLayer, 0, 0);
+                ctx.restore();
+            }
+
+            // --- Init ---
+            // NEW: Robust init function
+            function initApp() {
+                resizeCanvas(); // Attempt to resize
+                
+                if (canvas.width <= 0 || canvas.height <= 0) {
+                    // If it failed (size was 0), try again on the next frame
+                    requestAnimationFrame(initApp);
+                }
+                // If resize was successful, it will have set canvas.width
+                // and started the loop via the 'isLoopRunning' flag in resizeCanvas.
+            }
+            
+            initApp(); // Start the init process
+
+            // Mouse events
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseleave', stopDrawing);
+            canvas.addEventListener('mousemove', draw);
+
+            // Touch events
+            canvas.addEventListener('touchstart', startDrawing);
+            canvas.addEventListener('touchend', stopDrawing);
+            canvas.addEventListener('touchcancel', stopDrawing);
+            canvas.addEventListener('touchmove', draw);
+
+            // --- PWA Service Worker Registration ---
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                        })
+                        .catch(err => {
+                            console.log('ServiceWorker registration failed: ', err);
+                        });
+                });
+            }
+        });
+    </script>
+</body>
+</html>
+
